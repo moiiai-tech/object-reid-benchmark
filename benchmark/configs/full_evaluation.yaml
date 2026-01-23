@@ -1,0 +1,152 @@
+# Full Evaluation Configuration
+#
+# This configuration includes:
+# 1. Cross-domain evaluation: TransReID and CLIP-ReID trained on MSMT17, tested on all datasets
+# 2. Zero-shot evaluation: All other models tested on all datasets
+#
+# Expected runtime: Several hours (depends on GPU)
+# GPU memory required: ~8GB recommended
+
+gpu_id: 0
+
+data:
+  root: "reid-data"
+
+# All available datasets for evaluation
+datasets:
+  - market1501
+  - dukemtmcreid
+  - cuhk03
+  - msmt17
+  - grid
+  - ilids
+  - celebreid
+  - pku
+  - lastid
+  - ilidsvid
+  - g2a
+  - iustreid
+
+models:
+  # ============================================================================
+  # Cross-Domain Models (Trained on MSMT17, evaluated on all datasets)
+  # ============================================================================
+
+  - type: "clipreid"
+    name: "ViT-B-16"
+    source_domain: "msmt17"
+    pretrained_path: null         # Auto-resolved for MSMT17
+    stride_size: [16, 16]         # Standard stride for speed
+    input_size: [256, 128]
+    sie_camera: false             # Disabled for cross-domain
+    sie_view: false
+    sie_coe: 1.0
+    view_num: 1
+
+  - type: "clipreid"
+    name: "ViT-B-16-dense"        # Dense stride variant
+    source_domain: "msmt17"
+    pretrained_path: null
+    stride_size: [12, 12]         # Dense stride for better accuracy
+    input_size: [256, 128]
+    sie_camera: false
+    sie_view: false
+    sie_coe: 1.0
+    view_num: 1
+
+  - type: "transreid"
+    name: "vit_base_patch16_224_TransReID"
+    source_domain: "msmt17"
+    pretrained_path: null         # Auto-resolved for MSMT17
+    stride_size: [16, 16]
+    input_size: [256, 256]
+    sie_camera: false             # Disabled for cross-domain
+    sie_view: false
+    sie_coe: 3.0
+    jpm: false                    # Disabled for cross-domain
+    drop_path: 0.1
+    drop_out: 0.0
+    att_drop_rate: 0.0
+
+  # ============================================================================
+  # CNN Baseline Models (Zero-shot)
+  # ============================================================================
+
+  - type: "osnet"
+    name: "osnet_x1_0"
+    pretrained_path: null         # ImageNet weights
+
+  - type: "osnet"
+    name: "osnet_x0_75"
+    pretrained_path: null
+
+  - type: "osnet"
+    name: "osnet_x0_5"
+    pretrained_path: null
+
+  # ============================================================================
+  # Vision-Language Models (Zero-shot)
+  # ============================================================================
+
+  - type: "clip"
+    name: "ViT-B/32"
+
+  - type: "clip"
+    name: "ViT-B/16"
+
+  - type: "clip"
+    name: "ViT-L/14"
+
+  - type: "siglip2"
+    name: "google/siglip2-base-patch16-256"
+    pretrained_path: null
+    input_size: [256, 256]
+
+  - type: "siglip2"
+    name: "google/siglip2-base-patch16-384"
+    pretrained_path: null
+    input_size: [384, 384]
+
+  # ============================================================================
+  # Self-Supervised Models (Zero-shot)
+  # ============================================================================
+
+  - type: "dinov2"
+    name: "dinov2_vitb14"
+    pretrained_path: null
+    input_size: [256, 256]
+
+  - type: "dinov2"
+    name: "dinov2_vitl14"
+    pretrained_path: null
+    input_size: [256, 256]
+
+  - type: "dinov3"
+    name: "dinov3_vitb14"
+    pretrained_path: null
+    input_size: [256, 256]
+
+  - type: "dinov3"
+    name: "dinov3_vitl14"
+    pretrained_path: null
+    input_size: [256, 256]
+
+  # ============================================================================
+  # Large Vision Models (Zero-shot)
+  # ============================================================================
+
+  - type: "pecore"
+    name: "PE-Core-L14-336"
+    input_size: [336, 336]
+
+# Output configuration
+output:
+  results_dir: "results"
+  csv_filename: "full_evaluation_results.csv"
+
+# Notes:
+# - Total combinations: 16 models × 12 datasets = 192 benchmark runs
+# - Cross-domain models (3): Will use MSMT17 weights on all datasets
+# - Zero-shot models (13): Will use pre-trained weights without fine-tuning
+# - Expected runtime: 12-24 hours depending on GPU
+# - Results will show generalization capability across diverse datasets

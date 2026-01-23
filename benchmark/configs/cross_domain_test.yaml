@@ -1,0 +1,86 @@
+# Cross-Domain Evaluation Configuration
+# ======================================
+# Tests domain generalization by evaluating models trained on one dataset
+# across multiple target datasets without fine-tuning
+#
+# How it works:
+# 1. Load pretrained weights from SOURCE_DOMAIN
+# 2. Evaluate on TARGET_DOMAINS without retraining
+# 3. Measures how well the model generalizes to new environments
+#
+# Usage:
+#   python run_benchmark.py --config benchmark/configs/cross_domain_test.yaml
+#   reid benchmark run --config benchmark/configs/cross_domain_test.yaml
+
+# GPU Configuration
+# -----------------
+gpu_id: 0
+
+# Data Configuration
+# ------------------
+data:
+  root: "reid-data"
+
+# Cross-Domain Configuration
+# ---------------------------
+# IMPORTANT: Cross-domain mode uses specific configuration
+cross_domain_mode: true
+
+# Source Domain: Where the model was trained
+# Pretrained weights will be loaded from this dataset
+source_domain: "market1501"
+
+# Target Domains: Where to evaluate (without retraining)
+# First entry should match source_domain for in-domain baseline
+target_domains:
+  - market1501    # In-domain (baseline performance)
+  - dukemtmcreid  # Cross-domain (tests generalization)
+  - cuhk03        # Cross-domain (tests generalization)
+  - msmt17        # Cross-domain (large-scale test)
+
+# Model Selection
+# ---------------
+# NOTE: All models will use the SAME pretrained weights (from source_domain)
+#       Model architecture parameters should match the training configuration
+models:
+  # CLIP-ReID: Vision-language model with fine-tuning
+  # Source domain explicitly set to override default behavior
+  - type: "clipreid"
+    name: "ViT-B-16"
+    pretrained_path: null  # Auto-resolves to source_domain weights
+    source_domain: "msmt17"  # Load weights trained on MSMT17
+    view_num: 1
+    stride_size: [16, 16]
+    input_size: [256, 128]
+    sie_camera: false
+    sie_coe: 1.0
+
+  # TransReID: Transformer-based ReID
+  # IMPORTANT: Architecture params must match pretrained weights
+  - type: "transreid"
+    name: "vit_base_patch16_224_TransReID"
+    pretrained_path: null  # Auto-resolves to source_domain weights
+    source_domain: "msmt17"  # Load weights trained on MSMT17
+    view_num: 1
+    stride_size: [16, 16]
+    input_size: [256, 128]  # Must match training input size
+    sie_camera: true
+    sie_view: false
+    sie_coe: 3.0
+    jpm: false
+    drop_path: 0.1
+    drop_out: 0.0
+    att_drop_rate: 0.0
+
+# Output Configuration
+# --------------------
+output:
+  results_dir: "results"
+  csv_filename: "cross_domain_benchmark.csv"
+
+# Notes:
+# ------
+# - In cross-domain mode, classifier head is NOT loaded (feature extraction only)
+# - Camera/class counts are taken from TARGET dataset, not source
+# - Performance typically drops on cross-domain evaluations (expected behavior)
+# - Good generalization: <10% drop from in-domain to cross-domain

@@ -1,0 +1,50 @@
+# Minimal Configuration Template
+# ===============================
+# Use this as a starting point for custom benchmark configurations
+# Copy and modify as needed for your experiments
+#
+# Usage:
+#   1. Copy this file: cp minimal_template.yaml my_experiment.yaml
+#   2. Edit datasets and models sections
+#   3. Run: python run_benchmark.py --config benchmark/configs/my_experiment.yaml
+
+# GPU to use (0, 1, 2, etc.)
+gpu_id: 0
+
+# Dataset root directory
+data:
+  root: "reid-data"
+
+# Datasets to benchmark
+# Available: market1501, dukemtmcreid, cuhk03, msmt17, viper, grid, celebreid, etc.
+# Check available datasets: reid dataset list
+datasets:
+  - market1501
+
+# Models to benchmark
+# Common types: osnet, clip, clipreid, transreid, pecore, dinov2, dinov3, siglip2
+# Check available models: reid model list
+models:
+  # Simple models (minimal configuration)
+  - type: "osnet"
+    name: "osnet_x1_0"
+    pretrained_path: null
+
+  - type: "clip"
+    name: "ViT-B/32"
+
+  # Advanced models (require more parameters)
+  # NOTE: camera_num, num_classes, view_num are auto-detected per dataset
+  # - type: "clipreid"
+  #   name: "ViT-B-16"
+  #   pretrained_path: null
+  #   view_num: 1
+  #   stride_size: [16, 16]  # or [12, 12] for overlapping patches
+  #   input_size: [256, 128]
+  #   sie_camera: false      # true to use camera information
+  #   sie_coe: 1.0
+
+# Output directory and filename
+output:
+  results_dir: "."
+  csv_filename: "benchmark_results.csv"

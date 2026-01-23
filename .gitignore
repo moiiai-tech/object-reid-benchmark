@@ -1,0 +1,31 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Data and models
+reid-data/
+external/perception_models/
+external/CLIP-ReID/
+external/TransReID/
+
+# Model weights (but keep directory structure)
+models/*.pth
+models/*.pt
+
+# Results
+*.csv
+results/
+
+# Hydra outputs
+outputs/
+/reid-data
+.DS_Store
+pretrained_models/
+logs/

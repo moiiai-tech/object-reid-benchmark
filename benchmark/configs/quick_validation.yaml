@@ -1,0 +1,37 @@
+# Quick Validation Configuration
+# ==============================
+# Fast smoke test using a single dataset and simple model
+# Use this to verify your setup works correctly
+#
+# Usage:
+#   python run_benchmark.py --config benchmark/configs/quick_validation.yaml
+#   reid benchmark run --config benchmark/configs/quick_validation.yaml
+
+# GPU Configuration
+# -----------------
+gpu_id: 0  # Change this to match your available GPU
+
+# Data Configuration
+# ------------------
+data:
+  root: "reid-data"  # Root directory containing datasets
+
+# Dataset Selection
+# -----------------
+# Single dataset for quick testing
+datasets:
+  - market1501
+
+# Model Selection
+# ---------------
+# OSNet: Lightweight, fast baseline model
+models:
+  - type: "osnet"
+    name: "osnet_x1_0"
+    pretrained_path: null  # Auto-downloads if not found
+
+# Output Configuration
+# --------------------
+output:
+  results_dir: "."
+  csv_filename: "quick_validation_results.csv"

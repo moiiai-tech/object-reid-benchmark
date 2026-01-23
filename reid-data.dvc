@@ -1,0 +1,6 @@
+outs:
+- md5: 0e5fc69105f850305d43178bd6930173.dir
+  size: 41660135387
+  nfiles: 3858892
+  hash: md5
+  path: reid-data

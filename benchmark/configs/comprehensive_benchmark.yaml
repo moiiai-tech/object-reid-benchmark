@@ -1,0 +1,80 @@
+# Comprehensive Benchmark Configuration
+# ======================================
+# Full benchmark suite with multiple datasets and model architectures
+# Tests standard models (OSNet, CLIP, PE-Core) across key ReID datasets
+#
+# Usage:
+#   python run_benchmark.py --config benchmark/configs/comprehensive_benchmark.yaml
+#   reid benchmark run --config benchmark/configs/comprehensive_benchmark.yaml
+
+# GPU Configuration
+# -----------------
+gpu_id: 0  # Change this to match your available GPU
+
+# Data Configuration
+# ------------------
+data:
+  root: "reid-data"  # Root directory containing datasets
+
+# Dataset Selection
+# -----------------
+# Four major person re-identification datasets
+datasets:
+  - market1501    # 32,668 images, 1,501 identities
+  - dukemtmcreid  # 36,411 images, 1,404 identities
+  - cuhk03        # 28,192 images, 1,467 identities
+  - msmt17        # 126,441 images, 4,101 identities (largest)
+
+# Model Selection
+# ---------------
+models:
+  # OSNet: Lightweight CNN baseline
+  # - Fast inference, good accuracy-speed tradeoff
+  - type: "osnet"
+    name: "osnet_x1_0"
+    pretrained_path: null
+
+  # CLIP: Zero-shot vision-language model
+  # - No fine-tuning required, uses visual-text alignment
+  - type: "clip"
+    name: "ViT-B/32"
+
+  # CLIP-ReID: Fine-tuned CLIP for person ReID
+  # - Better than vanilla CLIP, trained specifically for ReID
+  # NOTE: Dataset-specific params (camera_num, num_classes) are auto-detected
+  - type: "clipreid"
+    name: "ViT-B-16"
+    pretrained_path: null
+    view_num: 1
+    stride_size: [16, 16]
+    input_size: [256, 128]
+    sie_camera: false  # Side Information Embedding (camera ID)
+    sie_coe: 1.0
+
+  # TransReID: Transformer-based ReID with spatial priors
+  # - State-of-the-art accuracy, slower inference
+  # NOTE: Dataset-specific params (camera_num, num_classes) are auto-detected
+  - type: "transreid"
+    name: "vit_base_patch16_224_TransReID"
+    pretrained_path: null
+    view_num: 1
+    stride_size: [16, 16]
+    input_size: [256, 128]
+    sie_camera: true   # Uses camera information
+    sie_view: false
+    sie_coe: 3.0
+    jpm: false         # Jigsaw Patch Module
+    drop_path: 0.1
+    drop_out: 0.0
+    att_drop_rate: 0.0
+
+  # PE-Core: Large-scale pretrained vision model
+  # - Excellent zero-shot performance
+  - type: "pecore"
+    name: "PE-Core-L14-336"
+
+# Output Configuration
+# --------------------
+output:
+  results_dir: "."
+  csv_filename: "comprehensive_benchmark_results.csv"

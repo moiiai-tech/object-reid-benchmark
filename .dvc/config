@@ -1,0 +1,6 @@
+[core]
+    remote = myremote
+    autostage = true
+    hardlink_lock = true
+['remote "myremote"']
+    url = gs://reid-data/dvc
