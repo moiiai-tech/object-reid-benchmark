@@ -78,13 +78,16 @@ class SigLIP2Wrapper(BaseModelWrapper):
             logger.error("Install with: pip install git+https://github.com/huggingface/transformers@main")
             raise
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Extract features from images using SigLIP2.
 
         Args:
             imgs: Batch of images as tensor (B, C, H, W)
                   Expected to be normalized with ImageNet mean/std
+            cam_labels: Ignored - SigLIP2 does not use camera labels
 
         Returns:
             features: Tensor of shape (B, embed_dim)

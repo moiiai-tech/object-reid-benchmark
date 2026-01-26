@@ -6,8 +6,10 @@ from .logger import get_dataset_logger, get_model_logger, setup_logger
 from .normalization import (
     denormalize_imagenet,
     imagenet_to_clip,
+    imagenet_to_clipreid,
     imagenet_to_transreid,
     normalize_clip,
+    normalize_clipreid,
     normalize_transreid,
 )
 from .path_manager import (
@@ -32,8 +34,10 @@ __all__ = [
     "get_dataset_params",
     "denormalize_imagenet",
     "normalize_clip",
+    "normalize_clipreid",
     "normalize_transreid",
     "imagenet_to_clip",
+    "imagenet_to_clipreid",
     "imagenet_to_transreid",
     "add_external_path",
     "remove_external_path",

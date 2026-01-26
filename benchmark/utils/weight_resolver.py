@@ -330,7 +330,7 @@ def resolve_model_weights(
 
     Args:
         model_type: Type of model ('clipreid' or 'transreid')
-        dataset_name: Dataset name
+        dataset_name: Dataset name (target dataset for evaluation)
         model_cfg: OmegaConf model configuration
 
     Returns:
@@ -340,12 +340,31 @@ def resolve_model_weights(
     if model_cfg.get("pretrained_path") not in [None, "null", ""]:
         return model_cfg.get("pretrained_path")
 
+    # Check if source_domain is specified (for cross-domain evaluation)
+    # If so, use source_domain instead of dataset_name for weight resolution
+    source_domain = model_cfg.get("source_domain", None)
+    weight_dataset = source_domain if source_domain else dataset_name
+
+    # Disable fallback to MSMT17 when source_domain is explicitly specified
+    # (we don't want to fall back when we're already using a specific source)
+    use_fallback = not bool(source_domain)
+
+    if source_domain:
+        console.print(
+            f"[cyan]Cross-domain evaluation:[/cyan] Loading {model_type} weights from "
+            f"[bold]{source_domain}[/bold], evaluating on [bold]{dataset_name}[/bold]"
+        )
+
     # Otherwise, auto-resolve based on model type
     if model_type == "clipreid":
         variant = _weight_resolver.get_clipreid_variant_from_config(model_cfg)
-        return _weight_resolver.resolve_clipreid_weights(dataset_name, variant)
+        return _weight_resolver.resolve_clipreid_weights(
+            weight_dataset, variant, fallback_to_msmt17=use_fallback
+        )
     elif model_type == "transreid":
         variant = _weight_resolver.get_transreid_variant_from_config(model_cfg)
-        return _weight_resolver.resolve_transreid_weights(dataset_name, variant)
+        return _weight_resolver.resolve_transreid_weights(
+            weight_dataset, variant, fallback_to_msmt17=use_fallback
+        )
     else:
         return None

@@ -15,7 +15,7 @@ class DINOv3Wrapper(BaseModelWrapper):
 
     def __init__(
         self,
-        model_name: str = "dinov3_vitb14",
+        model_name: str = "vitb14",
         pretrained_path: str = None,
         device: str = "cuda",
         input_size: tuple = (256, 256),
@@ -23,36 +23,44 @@ class DINOv3Wrapper(BaseModelWrapper):
         """
         Initialize DINOv3 model.
 
+        NOTE: DINOv3 is not yet released. This wrapper falls back to DINOv2.
+
         Args:
-            model_name: DINOv3 variant (dinov3_vits14, dinov3_vitb14, dinov3_vitl14, dinov3_vitg14)
+            model_name: DINOv3/v2 variant short name (vits14, vitb14, vitl14, vitg14)
+                       or full name (dinov2_vits14, dinov2_vitb14, etc.)
             pretrained_path: Path to pretrained weights (optional)
             device: Device to load model on
             input_size: Input image size (H, W)
         """
         super().__init__(device)
-        self.dinov3_model_name = model_name
+        # Normalize model name - try dinov3 first, fall back to dinov2
+        if not model_name.startswith('dinov'):
+            self.dinov3_model_name = f"dinov3_{model_name}"
+            self.fallback_model_name = f"dinov2_{model_name}"
+        else:
+            self.dinov3_model_name = model_name
+            self.fallback_model_name = model_name.replace('dinov3', 'dinov2')
         self.model_name = f"DINOv3-{model_name}"
         self.pretrained_path = pretrained_path
         self.input_size = input_size
         self.load_model()
 
     def load_model(self):
-        """Load and initialize DINOv3 model."""
+        """Load and initialize DINOv3 model (falls back to DINOv2)."""
         logger.info(f"Loading DINOv3 {self.dinov3_model_name}...")
 
         try:
-            # Note: DINOv3 might not be available in torch.hub yet
-            # This implementation assumes it will follow similar API to DINOv2
-            # You may need to adjust based on the actual DINOv3 release
+            # Note: DINOv3 is not yet publicly released
+            # This implementation falls back to DINOv2
 
             # Try to load from torch.hub (adjust repo name when DINOv3 is released)
             try:
                 self.model = torch.hub.load('facebookresearch/dinov3', self.dinov3_model_name)
+                logger.info(f"Successfully loaded DINOv3 from torch.hub")
             except Exception:
-                # Fallback: If DINOv3 is not available, try using DINOv2 as placeholder
-                logger.warning(f"DINOv3 not found in torch.hub. Using DINOv2 {self.dinov3_model_name.replace('dinov3', 'dinov2')} as fallback.")
-                fallback_name = self.dinov3_model_name.replace('dinov3', 'dinov2')
-                self.model = torch.hub.load('facebookresearch/dinov2', fallback_name)
+                # Fallback: Use DINOv2 since DINOv3 is not available
+                logger.warning(f"DINOv3 not available. Using DINOv2 {self.fallback_model_name} as fallback.")
+                self.model = torch.hub.load('facebookresearch/dinov2', self.fallback_model_name)
 
             # If custom pretrained weights are provided, load them
             if self.pretrained_path:
@@ -70,13 +78,16 @@ class DINOv3Wrapper(BaseModelWrapper):
             logger.error(f"Error loading DINOv3 model: {e}")
             raise
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Extract features from images using DINOv3.
 
         Args:
             imgs: Batch of images as tensor (B, C, H, W)
                   Expected to be normalized with ImageNet mean/std
+            cam_labels: Ignored - DINOv3 does not use camera labels
 
         Returns:
             features: Tensor of shape (B, embed_dim)

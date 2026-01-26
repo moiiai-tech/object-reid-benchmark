@@ -20,15 +20,18 @@ class BaseModelWrapper(ABC):
         pass
 
     @abstractmethod
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Extract features from images.
 
         Args:
             imgs: Batch of images as tensor (B, C, H, W)
+            cam_labels: Optional camera labels for models that use camera/view embeddings (B,)
 
         Returns:
-            features: Tensor of shape (B, feature_dim)
+            features: Normalized tensor of shape (B, feature_dim)
         """
         pass
 

@@ -36,8 +36,15 @@ class CLIPWrapper(BaseModelWrapper):
         self.model.eval()
         print(f"Successfully loaded CLIP {self.clip_model_name}")
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
-        """Extract features from tensor images (converts to PIL internally)."""
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        """Extract features from tensor images (converts to PIL internally).
+
+        Args:
+            imgs: Batch of images as tensor (B, C, H, W)
+            cam_labels: Ignored - CLIP does not use camera labels
+        """
         with torch.no_grad():
             # Convert tensor images to PIL for CLIP preprocessing
             pil_images = []

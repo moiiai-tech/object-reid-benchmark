@@ -5,59 +5,49 @@ This directory contains configuration templates for running person re-identifica
 ## Quick Start
 
 ```bash
-# List available templates
-reid config templates
-
 # Preview a configuration
-reid config preview benchmark/configs/quick_validation.yaml
+reid config preview benchmark/configs/minimal_template.yaml
 
 # Validate a configuration
-reid config validate benchmark/configs/comprehensive_benchmark.yaml
+reid config validate benchmark/configs/advanced_models.yaml
 
 # Run a benchmark
-reid benchmark run --config benchmark/configs/quick_validation.yaml
+reid benchmark run --config benchmark/configs/minimal_template.yaml
 ```
 
 ## Available Templates
 
-### 1. `quick_validation.yaml`
-**Purpose:** Fast smoke test to verify your setup works correctly.
+### 1. `minimal_template.yaml` ⭐ START HERE
+**Purpose:** Starting point for creating custom configurations.
 
-**What it runs:**
-- **Dataset:** Market-1501 only
-- **Model:** OSNet (lightweight baseline)
-- **Use case:** Quick validation, debugging, testing new code changes
+**What it contains:**
+- Basic structure with detailed comments
+- Simple model examples (OSNet, CLIP)
+- Commented advanced model examples (CLIP-ReID)
+- Minimal configuration for quick experiments
 
-**Estimated runtime:** ~5-10 minutes
+**Use case:** Copy and modify for your experiments
 
 ```bash
-python run_benchmark.py --config benchmark/configs/quick_validation.yaml
+cp benchmark/configs/minimal_template.yaml my_experiment.yaml
+# Edit my_experiment.yaml
+python run_benchmark.py --config my_experiment.yaml
 ```
+
+**Estimated runtime:** ~10-15 minutes (2 models on Market-1501)
 
 ---
 
-### 2. `comprehensive_benchmark.yaml`
-**Purpose:** Full evaluation across major datasets with standard models.
-
-**What it runs:**
-- **Datasets:** Market-1501, DukeMTMC-reID, CUHK03, MSMT17
-- **Models:** OSNet, CLIP, CLIP-ReID, TransReID, PE-Core
-- **Use case:** Comprehensive model comparison, paper benchmarks
-
-**Estimated runtime:** Several hours (20 model-dataset combinations)
-
-```bash
-python run_benchmark.py --config benchmark/configs/comprehensive_benchmark.yaml
-```
-
----
-
-### 3. `advanced_models.yaml`
+### 2. `advanced_models.yaml`
 **Purpose:** Test state-of-the-art models with various architectures.
 
 **What it runs:**
 - **Dataset:** Market-1501 (focused comparison)
-- **Models:** CLIP-ReID variants, DINOv2, DINOv3, SigLIP2
+- **Models:**
+  - CLIP-ReID (2 variants: baseline + SIE+OLP)
+  - DINOv2 (3 variants: Base, Large, Giant)
+  - SigLIP2 (3 variants: Base 256px, Base 384px, SO400M)
+  - PE-Spatial (Dense prediction model)
 - **Use case:** Comparing advanced architectures, ablation studies
 
 **Estimated runtime:** Several hours (9 models on 1 dataset)
@@ -68,33 +58,34 @@ python run_benchmark.py --config benchmark/configs/advanced_models.yaml
 
 ---
 
-### 4. `cross_domain_test.yaml`
-**Purpose:** Evaluate domain generalization without fine-tuning.
+### 3. `pespatial.yaml`
+**Purpose:** Benchmark PE-Spatial models for person re-identification.
 
 **What it runs:**
-- **Source domain:** Market-1501 (where model was trained)
-- **Target domains:** Market-1501, DukeMTMC-reID, CUHK03, MSMT17
-- **Models:** CLIP-ReID, TransReID (trained on MSMT17)
-- **Use case:** Testing generalization, domain adaptation research
+- **Dataset:** Market-1501
+- **Models:**
+  - PE-Spatial-G14-448 (Giant 14, 448×448 resolution)
+- **Use case:** Testing PE-Spatial dense prediction models
 
-**How it works:** Models use weights trained on the source domain and are evaluated on all target domains without retraining.
+**Estimated runtime:** ~1-2 hours (1 model on 1 dataset)
 
 ```bash
-python run_benchmark.py --config benchmark/configs/cross_domain_test.yaml
+python run_benchmark.py --config-name pespatial
 ```
 
 ---
 
-### 5. `full_evaluation.yaml` ⭐ NEW
+### 4. `full_evaluation.yaml` ⭐ COMPREHENSIVE
 **Purpose:** Complete evaluation - Cross-domain + Zero-shot on all datasets
 
 **What it runs:**
-- **Datasets:** All 12 datasets (Market-1501, DukeMTMC, CUHK03, MSMT17, GRID, iLIDS, CelebReID, PKU, LASTID, iLIDS-VID, G2A, IUST-ReID)
+- **Datasets:** 11 datasets (Market-1501, DukeMTMC, CUHK03, MSMT17, GRID, iLIDS, CelebReID, PKU, LASTID, iLIDS-VID, IUST-ReID)
+  - Note: G2A excluded (extremely large: 533K queries × 1.9M gallery)
 - **Cross-domain models:** CLIP-ReID (2 variants), TransReID trained on MSMT17
-- **Zero-shot models:** OSNet variants, CLIP variants, DINOv2, DINOv3, SigLIP2, PE-Core
+- **Zero-shot models:** OSNet variants, CLIP variants, DINOv2, SigLIP2, PE-Core
 - **Use case:** Comprehensive benchmark across all available models and datasets
 
-**Estimated runtime:** 12-24 hours (192 model-dataset combinations)
+**Estimated runtime:** 12-24 hours (150+ model-dataset combinations)
 
 ```bash
 python run_benchmark.py --config benchmark/configs/full_evaluation.yaml
@@ -105,24 +96,7 @@ python run_benchmark.py --config benchmark/configs/full_evaluation.yaml
 - Evaluates zero-shot performance on diverse datasets
 - Comprehensive comparison of all model families
 - Includes both standard and challenging datasets
-
----
-
-### 6. `minimal_template.yaml`
-**Purpose:** Starting point for creating custom configurations.
-
-**What it contains:**
-- Basic structure with comments
-- Simple model examples
-- Commented advanced model examples
-
-**Use case:** Copy and modify for your experiments
-
-```bash
-cp benchmark/configs/minimal_template.yaml my_experiment.yaml
-# Edit my_experiment.yaml
-python run_benchmark.py --config my_experiment.yaml
-```
+- Incremental results saving (results saved after each model+dataset combination)
 
 ---
 
@@ -200,6 +174,10 @@ The following parameters are **automatically detected** from the dataset registr
 # PE-Core - Large pretrained model
 - type: "pecore"
   name: "PE-Core-L14-336"
+
+# PE-Spatial - Dense prediction model
+- type: "pespatial"
+  name: "PE-Spatial-G14-448"
 ```
 
 ### Advanced Models (More Parameters)
@@ -254,8 +232,8 @@ The following parameters are **automatically detected** from the dataset registr
 reid config list
 
 # View a config file
-reid config show quick_validation
-reid config show comprehensive_benchmark
+reid config show minimal_template
+reid config show advanced_models
 
 # Validate a config
 reid config validate my_config.yaml
@@ -294,26 +272,22 @@ The wizard will guide you through:
 For domain generalization experiments:
 
 ```yaml
-# Enable cross-domain mode
-cross_domain_mode: true
-
-# Source domain (where model was trained)
-source_domain: "market1501"
-
-# Target domains (where to evaluate)
-target_domains:
-  - market1501    # In-domain baseline
-  - dukemtmcreid  # Cross-domain
-  - cuhk03        # Cross-domain
-  - msmt17        # Cross-domain
-
-# Models use source_domain weights
+# Models trained on source domain, evaluated on targets
 models:
   - type: "clipreid"
     name: "ViT-B-16"
-    source_domain: "msmt17"  # Override to use MSMT17 weights
+    source_domain: "msmt17"  # Use MSMT17 pretrained weights
     pretrained_path: null
+    stride_size: [16, 16]
+    sie_camera: false
     # ... other params
+
+# Evaluate on all target datasets
+datasets:
+  - msmt17        # In-domain baseline
+  - market1501    # Cross-domain
+  - dukemtmcreid  # Cross-domain
+  - cuhk03        # Cross-domain
 ```
 
 **Important notes:**
@@ -366,16 +340,18 @@ Supported model types:
 - `clipreid` - Fine-tuned CLIP for person ReID
 - `transreid` - Transformer-based ReID
 - `pecore` - Large-scale pretrained vision model
-- `dinov2` - Self-supervised ViT (v2)
-- `dinov3` - Self-supervised ViT (v3)
+- `pespatial` - Dense prediction model with spatial understanding
+- `dinov2` - Self-supervised ViT
 - `siglip2` - Sigmoid loss CLIP variant
+
+Note: `dinov3` is not yet released (wrapper falls back to dinov2)
 
 ---
 
 ## Tips and Best Practices
 
 ### 1. Start Small
-Begin with `quick_validation.yaml` to verify everything works before running large benchmarks.
+Begin with `minimal_template.yaml` to verify everything works before running large benchmarks.
 
 ### 2. Use Preview
 Always preview your config before running to catch issues early:
@@ -418,6 +394,9 @@ Test models incrementally instead of all at once:
 2. Add more models
 3. Add more datasets
 4. Run full benchmark
+
+### 8. Incremental Results Saving
+Results are now saved after **each model+dataset combination** completes, so you never lose progress if the benchmark crashes or is interrupted.
 
 ---
 

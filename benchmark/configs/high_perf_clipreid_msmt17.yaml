@@ -1,0 +1,30 @@
+# High-Performance CLIP-ReID MSMT17 Configuration
+# Target: 74% mAP configuration based on successful evaluation
+# Uses 12x12 dense stride with SIE camera enabled
+
+cross_domain_mode: true
+gpu_id: 0
+
+data:
+  root: "reid-data"
+
+datasets:
+  - msmt17
+
+models:
+  # High-performance CLIP-ReID configuration (achieves ~74% mAP)
+  - type: "clipreid"
+    name: "ViT-B-16"
+    source_domain: "msmt17"
+    pretrained_path: "/home/lakshmanbalasubramanian/object-reid/pretrained_models/clipreid/msmt17/MSMT17_clipreid_12x12sie_ViT-B-16_60.pth"
+    stride_size: [12, 12]  # Dense 12x12 stride for better performance
+    input_size: [256, 128]
+    sie_camera: true       # Enable SIE camera for performance boost
+    sie_view: false
+    sie_coe: 3.0           # Use higher SIE coefficient (3.0)
+    view_num: 1
+    load_classifier: true   # Load classifier for same-domain evaluation
+
+output:
+  results_dir: "results"
+  csv_filename: "high_perf_clipreid_msmt17_results.csv"

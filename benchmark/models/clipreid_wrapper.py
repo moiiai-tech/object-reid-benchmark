@@ -8,7 +8,7 @@ from ..utils import (
     DEFAULT_DATASET,
     get_dataset_params,
     get_model_logger,
-    imagenet_to_clip,
+    imagenet_to_clipreid,
     setup_clipreid,
 )
 from .base import BaseModelWrapper
@@ -93,7 +93,10 @@ class CLIPReIDWrapper(BaseModelWrapper):
             from config import cfg as clipreid_cfg  # type: ignore
             from model.make_model import build_transformer  # type: ignore
 
-            clipreid_cfg.MODEL.NAME = self.arch_name
+            # Normalize model name for CLIP-ReID (e.g., "ViT-B-16-dense" -> "ViT-B-16")
+            # The "-dense" suffix is just a config variant (different stride), not a different model
+            normalized_arch_name = self.arch_name.replace("-dense", "")
+            clipreid_cfg.MODEL.NAME = normalized_arch_name
             clipreid_cfg.MODEL.STRIDE_SIZE = list(self.stride_size)
             clipreid_cfg.INPUT.SIZE_TRAIN = list(self.input_size)
             clipreid_cfg.INPUT.SIZE_TEST = list(self.input_size)
@@ -128,12 +131,14 @@ class CLIPReIDWrapper(BaseModelWrapper):
                             x in k
                             for x in [
                                 "classifier",
+                                "classifier_proj",
                                 "bottleneck.weight",
                                 "bottleneck.bias",
+                                "image_encoder.positional_embedding",  # Position embeddings depend on stride
                             ]
                         )
                     }
-                    logger.info("Cross-domain mode: Skipping classifier head weights")
+                    logger.info("Cross-domain mode: Skipping classifier head and position embedding weights")
 
                 missing_keys, unexpected_keys = self.model.load_state_dict(
                     param_dict, strict=False
@@ -161,7 +166,9 @@ class CLIPReIDWrapper(BaseModelWrapper):
             logger.error(f"Error loading CLIP-ReID model: {e}")
             raise
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Extract features from images.
 
@@ -169,6 +176,9 @@ class CLIPReIDWrapper(BaseModelWrapper):
             imgs: Batch of images as tensor (B, C, H, W)
                   Expected to be normalized with mean=[0.485, 0.456, 0.406],
                   std=[0.229, 0.224, 0.225]
+            cam_labels: Optional camera labels (B,) for SIE (Spatial Instance Encoding).
+                       If provided and sie_camera=True, uses actual camera IDs.
+                       If not provided, falls back to zeros (disables SIE benefit).
 
         Returns:
             features: Normalized feature tensor (B, feature_dim)
@@ -183,13 +193,24 @@ class CLIPReIDWrapper(BaseModelWrapper):
                     align_corners=False,
                 )
 
-            imgs_clip = imagenet_to_clip(imgs)
+            # CLIP-ReID uses [0.5, 0.5, 0.5] normalization, NOT standard CLIP normalization
+            imgs_clipreid = imagenet_to_clipreid(imgs)
 
-            batch_size = imgs_clip.shape[0]
+            batch_size = imgs_clipreid.shape[0]
             if self.sie_camera:
-                cam_label = torch.zeros(
-                    batch_size, dtype=torch.long, device=imgs.device
-                )
+                if cam_labels is not None:
+                    # Use actual camera labels for SIE (critical for performance!)
+                    cam_label = cam_labels.to(imgs.device)
+                else:
+                    # Fallback to zeros if no camera labels provided
+                    # WARNING: This significantly reduces performance (~8-10% mAP loss)
+                    logger.warning(
+                        "SIE camera is enabled but no camera labels provided. "
+                        "Performance will be degraded. Pass cam_labels to extract_features()."
+                    )
+                    cam_label = torch.zeros(
+                        batch_size, dtype=torch.long, device=imgs.device
+                    )
                 view_label = torch.zeros(
                     batch_size, dtype=torch.long, device=imgs.device
                 )
@@ -197,7 +218,9 @@ class CLIPReIDWrapper(BaseModelWrapper):
                 cam_label = None
                 view_label = None
 
-            features = self.model(imgs_clip, cam_label=cam_label, view_label=view_label)
+            features = self.model(
+                imgs_clipreid, cam_label=cam_label, view_label=view_label
+            )
 
             features = F.normalize(features, p=2, dim=1)
 

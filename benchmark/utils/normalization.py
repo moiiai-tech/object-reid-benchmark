@@ -25,24 +25,52 @@ def denormalize_imagenet(imgs: torch.Tensor) -> torch.Tensor:
 
 def normalize_clip(imgs: torch.Tensor) -> torch.Tensor:
     """
-    Normalize images for CLIP models (mean=0.5, std=0.5).
+    Normalize images for CLIP models using official OpenAI normalization values.
+
+    These values are from the official OpenAI CLIP implementation:
+    https://github.com/openai/CLIP/blob/main/clip/clip.py#L79
 
     Args:
         imgs: Batch of images in [0, 1] range (B, C, H, W)
 
     Returns:
-        Images normalized for CLIP
+        Images normalized for CLIP with mean=[0.48145466, 0.4578275, 0.40821073],
+        std=[0.26862954, 0.26130258, 0.27577711]
     """
-    mean_clip = torch.tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1).to(imgs.device)
-    std_clip = torch.tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1).to(imgs.device)
+    mean_clip = torch.tensor([0.48145466, 0.4578275, 0.40821073]).view(1, 3, 1, 1).to(imgs.device)
+    std_clip = torch.tensor([0.26862954, 0.26130258, 0.27577711]).view(1, 3, 1, 1).to(imgs.device)
     return (imgs - mean_clip) / std_clip
+
+
+def normalize_clipreid(imgs: torch.Tensor) -> torch.Tensor:
+    """
+    Normalize images for CLIP-ReID models (mean=0.5, std=0.5).
+
+    IMPORTANT: CLIP-ReID uses [0.5, 0.5, 0.5] normalization for training/inference,
+    NOT the standard CLIP normalization [0.481..., 0.457..., 0.408...].
+
+    This is despite using CLIP's visual encoder, because the pretrained weights were
+    fine-tuned with [0.5, 0.5, 0.5] normalization.
+
+    Source: https://github.com/Syliz/CLIP-ReID/blob/main/configs/person/vit_clipreid.yml#L20-L21
+
+    Args:
+        imgs: Batch of images in [0, 1] range (B, C, H, W)
+
+    Returns:
+        Images normalized for CLIP-ReID with mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]
+    """
+    mean_clipreid = torch.tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1).to(imgs.device)
+    std_clipreid = torch.tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1).to(imgs.device)
+    return (imgs - mean_clipreid) / std_clipreid
 
 
 def normalize_transreid(imgs: torch.Tensor) -> torch.Tensor:
     """
     Normalize images for TransReID models (mean=0.5, std=0.5).
 
-    Note: TransReID uses the same normalization as CLIP.
+    TransReID uses simplified normalization values compared to CLIP's official values.
+    This is consistent across all TransReID config files in the official repository.
 
     Args:
         imgs: Batch of images in [0, 1] range (B, C, H, W)
@@ -69,6 +97,24 @@ def imagenet_to_clip(imgs: torch.Tensor) -> torch.Tensor:
     """
     imgs_denorm = denormalize_imagenet(imgs)
     return normalize_clip(imgs_denorm)
+
+
+def imagenet_to_clipreid(imgs: torch.Tensor) -> torch.Tensor:
+    """
+    Convert images from ImageNet normalization to CLIP-ReID normalization.
+
+    This is a convenience function that combines denormalize_imagenet and normalize_clipreid.
+
+    Use this for CLIP-ReID models that were trained with [0.5, 0.5, 0.5] normalization.
+
+    Args:
+        imgs: Batch of images with ImageNet normalization (B, C, H, W)
+
+    Returns:
+        Images with CLIP-ReID normalization
+    """
+    imgs_denorm = denormalize_imagenet(imgs)
+    return normalize_clipreid(imgs_denorm)
 
 
 def imagenet_to_transreid(imgs: torch.Tensor) -> torch.Tensor:

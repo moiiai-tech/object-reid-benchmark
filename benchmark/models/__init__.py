@@ -9,6 +9,7 @@ from .dinov3_wrapper import DINOv3Wrapper
 from .factory import create_model
 from .osnet import OSNetWrapper
 from .pecore import PECoreWrapper
+from .pespatial import PESpatialWrapper
 from .siglip2_wrapper import SigLIP2Wrapper
 from .transreid_wrapper import TransReIDWrapper
 
@@ -17,6 +18,7 @@ __all__ = [
     "OSNetWrapper",
     "CLIPWrapper",
     "PECoreWrapper",
+    "PESpatialWrapper",
     "CLIPReIDWrapper",
     "TransReIDWrapper",
     "DINOv2Wrapper",

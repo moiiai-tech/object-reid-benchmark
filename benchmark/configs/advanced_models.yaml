@@ -1,37 +1,17 @@
 # Advanced Models Benchmark Configuration
-# ========================================
-# Tests advanced vision models including CLIP-ReID variants, DINOv2, DINOv3, SigLIP2
-# Focus on state-of-the-art models with different architectures and pretraining strategies
-#
-# Usage:
-#   python run_benchmark.py --config benchmark/configs/advanced_models.yaml
-#   reid benchmark run --config benchmark/configs/advanced_models.yaml
+# Tests CLIP-ReID variants, DINOv2, SigLIP2
+# Usage: python run_benchmark.py --config benchmark/configs/advanced_models.yaml
 
-# GPU Configuration
-# -----------------
-gpu_id: 0  # Requires GPU with good VRAM (8GB+ recommended)
+gpu_id: 0  # Requires 8GB+ VRAM
 
-# Data Configuration
-# ------------------
 data:
   root: "reid-data"
 
-# Dataset Selection
-# -----------------
-# Single dataset for focused model comparison
 datasets:
   - market1501
 
-# Model Selection
-# ---------------
-# NOTE: All dataset-specific parameters (camera_num, num_classes, view_num)
-#       are automatically detected from the dataset registry
-
+# NOTE: camera_num, num_classes, view_num auto-detected per dataset
 models:
-  # =====================================
-  # CLIP-ReID Variants
-  # =====================================
-
   # CLIP-ReID Baseline (no SIE, standard stride)
   - type: "clipreid"
     name: "ViT-B-16"
@@ -43,80 +23,54 @@ models:
     sie_coe: 1.0
 
   # CLIP-ReID + SIE + OLP (Best Performance)
-  # - SIE: Side Information Embedding (uses camera ID)
-  # - OLP: Overlapping Local Patches (stride 12x12 instead of 16x16)
-  # - Highest accuracy among CLIP-ReID variants
+  # SIE: Side Information Embedding (camera ID)
+  # OLP: Overlapping Local Patches (stride 12x12)
   - type: "clipreid"
     name: "ViT-B-16"
     pretrained_path: null
     view_num: 1
-    stride_size: [12, 12]  # Overlapping patches
+    stride_size: [12, 12]
     input_size: [256, 128]
-    sie_camera: true       # Uses camera information
+    sie_camera: true
     sie_coe: 1.0
 
-  # =====================================
   # DINOv2 Models (Self-supervised ViT)
-  # =====================================
-
-  # DINOv2 ViT-Base/14 (distilled)
   - type: "dinov2"
     name: "dinov2_vitb14"
     pretrained_path: null
     input_size: [256, 256]
 
-  # DINOv2 ViT-Large/14 (distilled)
   - type: "dinov2"
     name: "dinov2_vitl14"
     pretrained_path: null
     input_size: [256, 256]
 
-  # DINOv2 ViT-Giant/14 (largest, best accuracy)
   - type: "dinov2"
     name: "dinov2_vitg14"
     pretrained_path: null
     input_size: [256, 256]
 
-  # =====================================
-  # DINOv3 Models (Latest version)
-  # =====================================
-
-  # DINOv3 ViT-Base/14
-  - type: "dinov3"
-    name: "dinov3_vitb14"
-    pretrained_path: null
-    input_size: [256, 256]
-
-  # DINOv3 ViT-Large/14
-  - type: "dinov3"
-    name: "dinov3_vitl14"
-    pretrained_path: null
-    input_size: [256, 256]
-
-  # =====================================
   # SigLIP2 Models (Sigmoid Loss CLIP)
-  # =====================================
-
-  # SigLIP2 Base @ 256px (86M params)
   - type: "siglip2"
     name: "google/siglip2-base-patch16-256"
     pretrained_path: null
     input_size: [256, 256]
 
-  # SigLIP2 Base @ 384px (86M params, higher resolution)
   - type: "siglip2"
     name: "google/siglip2-base-patch16-384"
     pretrained_path: null
     input_size: [384, 384]
 
-  # SigLIP2 SO400M @ 384px (400M params, best performance)
   - type: "siglip2"
-    name: "google/siglip2-so400m-patch14-384"
+    name: "google/siglip2-so400m-patch14-384"  # 400M params, best performance
     pretrained_path: null
     input_size: [384, 384]
 
-# Output Configuration
-# --------------------
+  # PE-Spatial (Dense Prediction Model)
+  - type: "pespatial"
+    name: "PE-Spatial-G14-448"
+    input_size: [448, 448]
+
 output:
   results_dir: "results"
   csv_filename: "advanced_models_benchmark.csv"

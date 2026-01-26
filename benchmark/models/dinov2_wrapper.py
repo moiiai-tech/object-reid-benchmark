@@ -17,8 +17,8 @@ class DINOv2Wrapper(BaseModelWrapper):
 
     def __init__(
         self,
-        pretrained_path: str,
-        model_name: str = "dinov2_vitb14",
+        model_name: str = "vitb14",
+        pretrained_path: str = None,
         device: str = "cuda",
         input_size: tuple = (256, 256),
     ):
@@ -26,13 +26,18 @@ class DINOv2Wrapper(BaseModelWrapper):
         Initialize DINOv2 model.
 
         Args:
-            model_name: DINOv2 variant (dinov2_vits14, dinov2_vitb14, dinov2_vitl14, dinov2_vitg14)
+            model_name: DINOv2 variant short name (vits14, vitb14, vitl14, vitg14)
+                       or full name (dinov2_vits14, dinov2_vitb14, etc.)
             pretrained_path: Path to pretrained weights (optional)
             device: Device to load model on
             input_size: Input image size (H, W)
         """
         super().__init__(device)
-        self.dinov2_model_name = model_name
+        # Normalize model name to full format
+        if not model_name.startswith('dinov2_'):
+            self.dinov2_model_name = f"dinov2_{model_name}"
+        else:
+            self.dinov2_model_name = model_name
         self.model_name = f"DINOv2-{model_name}"
         self.pretrained_path = pretrained_path
         self.input_size = input_size
@@ -62,13 +67,16 @@ class DINOv2Wrapper(BaseModelWrapper):
             logger.error(f"Error loading DINOv2 model: {e}")
             raise
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Extract features from images using DINOv2.
 
         Args:
             imgs: Batch of images as tensor (B, C, H, W)
                   Expected to be normalized with ImageNet mean/std
+            cam_labels: Ignored - DINOv2 does not use camera labels
 
         Returns:
             features: Tensor of shape (B, embed_dim)

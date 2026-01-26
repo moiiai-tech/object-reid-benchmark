@@ -154,7 +154,7 @@ def validate_config(config_file, strict):
             elif len(config["models"]) == 0:
                 warnings.append("'models' list is empty")
             else:
-                valid_model_types = ["osnet", "clip", "clipreid", "transreid", "pecore", "dinov2", "dinov3", "siglip2"]
+                valid_model_types = ["osnet", "clip", "clipreid", "transreid", "pecore", "pespatial", "dinov2", "dinov3", "siglip2"]
 
                 for i, model in enumerate(config["models"], 1):
                     if not isinstance(model, dict):
@@ -439,9 +439,10 @@ def create_config(output):
         "3": ("clipreid", "CLIP-ReID - Fine-tuned CLIP for person ReID"),
         "4": ("transreid", "TransReID - Transformer-based ReID (state-of-the-art)"),
         "5": ("pecore", "PE-Core - Large pretrained vision model"),
-        "6": ("dinov2", "DINOv2 - Self-supervised ViT"),
-        "7": ("dinov3", "DINOv3 - Latest DINO version"),
-        "8": ("siglip2", "SigLIP2 - Sigmoid loss CLIP"),
+        "6": ("pespatial", "PE-Spatial - Dense prediction model with spatial understanding"),
+        "7": ("dinov2", "DINOv2 - Self-supervised ViT"),
+        "8": ("dinov3", "DINOv3 - Latest DINO version"),
+        "9": ("siglip2", "SigLIP2 - Sigmoid loss CLIP"),
     }
 
     table = Table(show_header=True)
@@ -522,6 +523,11 @@ def create_config(output):
             models.append({
                 "type": "pecore",
                 "name": "PE-Core-L14-336"
+            })
+        elif model_type == "pespatial":
+            models.append({
+                "type": "pespatial",
+                "name": "PE-Spatial-G14-448"
             })
         elif model_type == "dinov2":
             variant = Prompt.ask("  Variant", choices=["vitb14", "vitl14", "vitg14"], default="vitb14")

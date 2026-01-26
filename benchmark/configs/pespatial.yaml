@@ -1,0 +1,53 @@
+# PE-Spatial Models Benchmark Configuration
+# Tests PE-Spatial variants for person re-identification
+# PE-Spatial: Dense prediction models with spatial understanding
+# Usage: python run_benchmark.py --config-name pespatial
+
+gpu_id: 0  # Requires 16GB+ VRAM for large models
+
+data:
+  root: "reid-data"
+  batch_size: 4  # Reduced batch size for PE-Spatial models (default: 100)
+
+datasets:
+  - market1501
+  - dukemtmcreid
+  - cuhk03
+  - msmt17
+  - grid
+  - celebreid
+  - pku
+  - lastid
+  - ilids
+  - ilidsvid
+  - g2a
+  - iustreid
+
+# PE-Spatial Model Variants
+# PE-Spatial uses VisionTransformer (vision-only) for dense prediction
+models:
+  # PE-Spatial-S16-512 (Small 16, 512x512 resolution, ~4GB VRAM)
+  # Recommended for GPUs with 8-12GB VRAM
+  - type: "pespatial"
+    name: "PE-Spatial-S16-512"
+
+  # Larger models (uncomment if you have more VRAM):
+  # PE-Spatial-L14-448 (Large 14, 448x448 resolution, ~12GB VRAM)
+  # - type: "pespatial"
+  #   name: "PE-Spatial-L14-448"
+  #
+  # PE-Spatial-G14-448 (Giant 14, 448x448 resolution, REQUIRES 24GB+ VRAM)
+  # - type: "pespatial"
+  #   name: "PE-Spatial-G14-448"
+  #
+  # PE-Spatial-S16-512 (Small 16, 512x512 resolution, ~4GB VRAM)
+  # - type: "pespatial"
+  #   name: "PE-Spatial-S16-512"
+  #
+  # PE-Spatial-T16-512 (Tiny 16, 512x512 resolution, ~2GB VRAM)
+  # - type: "pespatial"
+  #   name: "PE-Spatial-T16-512"
+
+output:
+  results_dir: "results"
+  csv_filename: "pespatial_benchmark.csv"

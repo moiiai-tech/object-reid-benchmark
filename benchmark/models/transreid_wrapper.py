@@ -198,10 +198,13 @@ class TransReIDWrapper(BaseModelWrapper):
                                 "classifier",
                                 "bottleneck.weight",
                                 "bottleneck.bias",
+                                "pos_embed",  # Position embeddings depend on input size
                             ]
                         )
                     }
-                    logger.info("Cross-domain mode: Skipping classifier head weights")
+                    logger.info(
+                        "Cross-domain mode: Skipping classifier head and position embedding weights"
+                    )
 
                 # Load with strict=False to handle missing/unexpected keys
                 missing_keys, unexpected_keys = self.model.load_state_dict(
@@ -230,7 +233,9 @@ class TransReIDWrapper(BaseModelWrapper):
             logger.error(f"Error loading TransReID model: {e}")
             raise
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Extract features from images.
 
@@ -238,6 +243,9 @@ class TransReIDWrapper(BaseModelWrapper):
             imgs: Batch of images as tensor (B, C, H, W)
                   Expected to be normalized with mean=[0.485, 0.456, 0.406],
                   std=[0.229, 0.224, 0.225]
+            cam_labels: Optional camera labels (B,) for SIE (Spatial Instance Encoding).
+                       If provided and sie_camera=True, uses actual camera IDs.
+                       If not provided, falls back to zeros (disables SIE benefit).
 
         Returns:
             features: Normalized feature tensor (B, feature_dim)
@@ -257,14 +265,18 @@ class TransReIDWrapper(BaseModelWrapper):
             # Convert from ImageNet normalization to TransReID normalization
             imgs_transreid = imagenet_to_transreid(imgs)
 
-            # During inference, the model returns global features
-            # For SIE-enabled models, we need to provide dummy camera/view labels
-            # Create dummy labels (all zeros) for inference when actual labels are not available
+            # Extract features with SIE support
             batch_size = imgs_transreid.shape[0]
             if self.sie_camera or self.sie_view:
-                cam_label = torch.zeros(
-                    batch_size, dtype=torch.long, device=imgs.device
-                )
+                if cam_labels is not None:
+                    # Use actual camera labels for SIE (critical for performance!)
+                    cam_label = cam_labels.to(imgs.device)
+                else:
+                    # Fallback to zeros if no camera labels provided
+                    # WARNING: This significantly reduces performance for SIE-enabled models
+                    cam_label = torch.zeros(
+                        batch_size, dtype=torch.long, device=imgs.device
+                    )
                 view_label = torch.zeros(
                     batch_size, dtype=torch.long, device=imgs.device
                 )

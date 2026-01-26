@@ -69,6 +69,12 @@ def list_models(format):
             "description": "Perception-focused encoder",
         },
         {
+            "type": "pespatial",
+            "name": "PE-Spatial",
+            "variants": ["PE-Spatial-G14-448", "PE-Spatial-L14-448", "PE-Spatial-B16-512"],
+            "description": "Dense prediction model with spatial understanding",
+        },
+        {
             "type": "dinov2",
             "name": "DINOv2",
             "variants": ["dinov2_vitb14", "dinov2_vitl14"],
@@ -180,6 +186,20 @@ def model_info(model_type):
             "variants": ["PE-Core-L14-336"],
             "pretrained": "Large-scale perception data",
             "input_size": "336×336",
+        },
+        "pespatial": {
+            "name": "PE-Spatial",
+            "full_name": "PE-Spatial Dense Prediction",
+            "description": "Dense prediction model with spatial understanding for person Re-ID",
+            "variants": [
+                "PE-Spatial-G14-448 (Giant, 448×448)",
+                "PE-Spatial-L14-448 (Large, 448×448)",
+                "PE-Spatial-B16-512 (Base, 512×512)",
+                "PE-Spatial-S16-512 (Small, 512×512)",
+                "PE-Spatial-T16-512 (Tiny, 512×512)",
+            ],
+            "pretrained": "Large-scale perception data",
+            "input_size": "448×448 or 512×512 (variant dependent)",
         },
         "dinov2": {
             "name": "DINOv2",

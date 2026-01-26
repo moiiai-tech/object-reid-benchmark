@@ -130,6 +130,15 @@ def run_benchmarks(cfg: DictConfig):
                     )
                     all_results.append(result)
 
+                    # Save results incrementally after each model+dataset combination
+                    output_dir = Path(cfg.output.results_dir)
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    output_file = output_dir / cfg.output.csv_filename
+                    save_results(all_results, str(output_file))
+                    console.print(
+                        f"[dim]💾 Results saved to {output_file} ({len(all_results)} total)[/dim]"
+                    )
+
                     del model
                     torch.cuda.empty_cache()
 

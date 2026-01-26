@@ -22,6 +22,7 @@ from .dinov2_wrapper import DINOv2Wrapper
 from .dinov3_wrapper import DINOv3Wrapper
 from .osnet import OSNetWrapper
 from .pecore import PECoreWrapper
+from .pespatial import PESpatialWrapper
 from .siglip2_wrapper import SigLIP2Wrapper
 from .transreid_wrapper import TransReIDWrapper
 
@@ -119,6 +120,7 @@ def create_model(
         "osnet",
         "clip",
         "pecore",
+        "pespatial",
         "clipreid",
         "transreid",
         "dinov2",
@@ -206,6 +208,26 @@ def create_model(
             )
             raise ModelLoadError(
                 f"Failed to create PECore model '{model_name}': {e}"
+            ) from e
+    elif model_type == "pespatial":
+        try:
+            model = PESpatialWrapper(model_config=model_name, device=device)
+            BenchmarkLogger.log_model_creation(
+                logger,
+                f"{model_type}/{model_name}",
+                True,
+                f"Successfully created PE-Spatial model",
+            )
+            return model
+        except Exception as e:
+            BenchmarkLogger.log_model_creation(
+                logger,
+                f"{model_type}/{model_name}",
+                False,
+                f"PE-Spatial creation failed: {e}",
+            )
+            raise ModelLoadError(
+                f"Failed to create PE-Spatial model '{model_name}': {e}"
             ) from e
     elif model_type == "clipreid":
         try:

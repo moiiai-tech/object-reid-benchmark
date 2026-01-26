@@ -140,10 +140,14 @@ def compute_distance_matrix_batched(
     Returns:
         Distance matrix (N_q x N_g) as numpy array
     """
+    import tempfile
+    import os
+
     num_q = qf.size(0)
     num_g = gf.size(0)
 
-    distmat = np.zeros((num_q, num_g), dtype=np.float32)
+    # Calculate required memory
+    required_gb = (num_q * num_g * 4) / (1024**3)  # 4 bytes per float32
 
     console.print(
         f"[cyan]Computing distance matrix in batches (batch_size={batch_size})...[/cyan]"
@@ -151,6 +155,30 @@ def compute_distance_matrix_batched(
     console.print(
         f"[dim]Query: {num_q}, Gallery: {num_g}, Total pairs: {num_q * num_g:,}[/dim]"
     )
+
+    # If extremely large (> 100GB), use memory-mapped file
+    if required_gb > 100:
+        console.print(
+            f"[yellow]⚠ Distance matrix would require {required_gb:.1f} GB RAM[/yellow]"
+        )
+        console.print(
+            f"[cyan]💾 Using memory-mapped temporary file to save RAM...[/cyan]"
+        )
+
+        # Create temporary memory-mapped file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.dat')
+        temp_filename = temp_file.name
+        temp_file.close()
+
+        distmat = np.memmap(
+            temp_filename,
+            dtype='float32',
+            mode='w+',
+            shape=(num_q, num_g)
+        )
+        console.print(f"[dim]Created memory-mapped file: {temp_filename}[/dim]")
+    else:
+        distmat = np.zeros((num_q, num_g), dtype=np.float32)
 
     num_batches = (num_q + batch_size - 1) // batch_size
 
@@ -177,6 +205,14 @@ def compute_distance_matrix_batched(
 
             distmat[i:end_idx, :] = batch_dist.cpu().numpy()
             progress.update(task, advance=1)
+
+    # Note: If using memmap, the distmat is still memory-mapped
+    # It will be cleaned up when the array is garbage collected
+    # For extremely large datasets, this saves RAM at the cost of disk I/O
+    if required_gb > 100:
+        console.print(
+            f"[dim]✓ Distance matrix computation complete (memory-mapped)[/dim]"
+        )
 
     return distmat
 
@@ -238,7 +274,9 @@ def benchmark_model(
                     imgs, pids, camids = data[0], data[1], data[2]
                 imgs = imgs.to(device)
 
-                features = model_wrapper.extract_features(imgs)
+                # Pass camera IDs to models that support SIE (CLIP-ReID, TransReID)
+                # Models that don't use camera IDs will simply ignore this parameter
+                features = model_wrapper.extract_features(imgs, cam_labels=camids)
                 qf.append(features.cpu())
                 q_pids.extend(pids.tolist())
                 q_camids.extend(camids.tolist())
@@ -254,7 +292,9 @@ def benchmark_model(
                     imgs, pids, camids = data[0], data[1], data[2]
                 imgs = imgs.to(device)
 
-                features = model_wrapper.extract_features(imgs)
+                # Pass camera IDs to models that support SIE (CLIP-ReID, TransReID)
+                # Models that don't use camera IDs will simply ignore this parameter
+                features = model_wrapper.extract_features(imgs, cam_labels=camids)
                 gf.append(features.cpu())
                 g_pids.extend(pids.tolist())
                 g_camids.extend(camids.tolist())
@@ -269,8 +309,9 @@ def benchmark_model(
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-    qf = F.normalize(qf, p=2, dim=1)
-    gf = F.normalize(gf, p=2, dim=1)
+    # NOTE: Features are already L2-normalized by all model wrappers (CLIP-ReID, TransReID,
+    # DINOv2, DINOv3, SigLIP2, CLIP). No need to normalize again here.
+    # All wrappers call F.normalize(features, p=2, dim=1) before returning.
 
     num_q = qf.size(0)
     num_g = gf.size(0)
@@ -285,8 +326,19 @@ def benchmark_model(
         console.print(
             "[cyan]Using memory-efficient batched distance computation...[/cyan]"
         )
+
+        # Adjust batch size based on gallery size to avoid GPU OOM
+        if num_g > 1_000_000:
+            # For extremely large galleries (> 1M), use very small batches
+            batch_size = 100
+            console.print(f"[dim]Using reduced batch size ({batch_size}) for huge gallery[/dim]")
+        elif num_g > 100_000:
+            batch_size = 500
+        else:
+            batch_size = 2000
+
         distmat = compute_distance_matrix_batched(
-            qf, gf, batch_size=2000, metric="euclidean"
+            qf, gf, batch_size=batch_size, metric="euclidean"
         )
     else:
         console.print("[cyan]Computing distance matrix...[/cyan]")

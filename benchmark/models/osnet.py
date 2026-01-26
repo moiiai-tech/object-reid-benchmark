@@ -81,14 +81,25 @@ class OSNetWrapper(BaseModelWrapper):
                 "Successfully loaded re-ID pretrained weights (feature extractor only)"
             )
         else:
-            print(f"WARNING: Model file {self.pretrained_path} not found!")
-            print("Using random initialization")
+            raise FileNotFoundError(
+                f"Pretrained weights not found: {self.pretrained_path}\n"
+                f"Cannot benchmark model without pretrained weights. "
+                f"Random initialization would produce meaningless results.\n"
+                f"Please download the weights or remove this model from the benchmark config."
+            )
 
         self.model = self.model.to(self.device)
         self.model.eval()
 
-    def extract_features(self, imgs: torch.Tensor) -> torch.Tensor:
-        """Extract features from tensor images."""
+    def extract_features(
+        self, imgs: torch.Tensor, cam_labels: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        """Extract features from tensor images.
+
+        Args:
+            imgs: Batch of images as tensor (B, C, H, W)
+            cam_labels: Ignored - OSNet does not use camera labels
+        """
         with torch.no_grad():
             features = self.model(imgs)
         return features

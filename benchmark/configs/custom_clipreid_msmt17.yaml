@@ -1,0 +1,41 @@
+# Custom CLIP-ReID MSMT17 Model Evaluation
+# Using MSMT17_clipreid_12x12sie_ViT-B-16_60.pth weights on all datasets
+# Expected runtime: 2-4 hours, GPU memory: ~8GB recommended
+
+cross_domain_mode: true
+gpu_id: 0
+
+data:
+  root: "reid-data"
+
+# All available datasets for comprehensive evaluation
+datasets:
+  # - market1501
+  # - dukemtmcreid
+  - msmt17
+  # - cuhk03
+  # - grid
+  # - celebreid
+  # - pku
+  # - ilids
+  # - lastid
+  # - ilidsvid
+  # - iustreid
+
+models:
+  # Custom CLIP-ReID model with MSMT17 12x12 dense SIE weights
+  - type: "clipreid"
+    name: "ViT-B-16"
+    source_domain: "msmt17"
+    pretrained_path: "/home/lakshmanbalasubramanian/object-reid/pretrained_models/clipreid/msmt17/MSMT17_clipreid_12x12sie_ViT-B-16_60.pth"
+    stride_size: [12, 12]  # Dense stride (12x12) as indicated in filename
+    input_size: [256, 128]
+    sie_camera: true       # SIE (Side Information Embedding) enabled
+    sie_view: false
+    sie_coe: 1.0
+    view_num: 1
+    load_classifier: false  # Set to false for cross-domain evaluation
+
+output:
+  results_dir: "results"
+  csv_filename: "custom_clipreid_msmt17_results.csv"

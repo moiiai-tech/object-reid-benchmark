@@ -1,0 +1,30 @@
+# Paper-Exact CLIP-ReID MSMT17 Configuration
+# Replicating the original paper evaluation setup exactly
+# Expected: 64.9% mAP, 83.6% Rank-1
+
+cross_domain_mode: true
+gpu_id: 0
+
+data:
+  root: "reid-data"
+
+datasets:
+  - msmt17
+
+models:
+  # Paper-exact CLIP-ReID configuration
+  - type: "clipreid"
+    name: "ViT-B-16"
+    source_domain: "msmt17"
+    pretrained_path: "/home/lakshmanbalasubramanian/object-reid/pretrained_models/clipreid/msmt17/MSMT17_clipreid_12x12sie_ViT-B-16_60.pth"
+    stride_size: [16, 16]  # Paper uses 16x16 stride, NOT 12x12
+    input_size: [256, 128]
+    sie_camera: false       # Paper has SIE_CAMERA commented out (disabled)
+    sie_view: false
+    sie_coe: 3.0           # Paper uses SIE_COE: 3.0
+    view_num: 1
+    load_classifier: true   # Load classifier for same-domain evaluation
+
+output:
+  results_dir: "results"
+  csv_filename: "paper_exact_clipreid_msmt17_results.csv"
